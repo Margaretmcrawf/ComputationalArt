@@ -4,7 +4,6 @@ import random
 import math
 from PIL import Image
 
-
 def build_random_function(min_depth, max_depth):
     """ Builds a random function of depth at least min_depth and depth
         at most max_depth (see assignment writeup for definition of depth
@@ -12,63 +11,10 @@ def build_random_function(min_depth, max_depth):
 
         min_depth: the minimum depth of the random function
         max_depth: the maximum depth of the random function
-        returns: the randomly generated function represented as a nested list
+        returns: the randomly generated function represented as a lambda function.
         (see assignment writeup for details on the representation of
         these functions)
     """
-
-    #randomly selects the first block to go into the function, from a string of building block functions
-    blocks = ['prod', 'avg', 'cos_pi', 'sin_pi', 'x', 'y', 'cube', 'atan']
-    function = [random.choice(blocks)]
-    
-    #basic situation for when there are lots of recursions left and we don't have to worry about end cases
-    if min_depth > 1:
-        min_depth = min_depth - 1
-        max_depth = max_depth - 1
-        if function in [['x'], ['y'], ['avg'], ['prod']]: #function requires two inputs
-            function = function + [build_random_function(min_depth, max_depth)] + [build_random_function(min_depth, max_depth)]
-        else: #only one input
-            function = function + [build_random_function(min_depth, max_depth)]
-        return function
-
-    #once max_depth gets to 1, the next element must be either x or y.
-    if max_depth == 1:
-        list1 = ['x', 'y']
-        function = [random.choice(list1)]
-        return function
-
-    #once the function gets past the threshold of min_depth, it can end if the random function is either x or y
-    if min_depth == 1:
-        
-        if function == ['x'] or function == ['y']:
-            return function
-        else:
-            max_depth = max_depth - 1
-
-            if function == ['avg'] or function == ['prod']:
-                function = function + [build_random_function(min_depth, max_depth)] + [build_random_function(min_depth, max_depth)]
-            else:
-                function = function + [build_random_function(min_depth, max_depth)]
-            return function
-
-def evaluate_random_function(f, x, y):
-    """ Evaluate the random function f with inputs x,y
-        Representation of the function f is defined in the assignment writeup
-
-        f: the function to evaluate, will be a list of strings
-        x: the value of x to be used to evaluate the function
-        y: the value of y to be used to evaluate the function
-        returns: the function value
-
-        >>> evaluate_random_function(['x'],-0.5, 0.75)
-        -0.5
-        >>> evaluate_random_function(['y'],0.1,0.02)
-        0.02
-        >>> evaluate_random_function(['sin_pi', ['y']], 0.9, 0.5)
-        1.0
-    """
-
-    #define all lambda functions for the building blocks
     prod = lambda a, b: a*b
     avg = lambda a, b: 0.5*(a+b)
     cos_pi = lambda a: math.cos(math.pi*a)
@@ -78,33 +24,35 @@ def evaluate_random_function(f, x, y):
     atan = lambda a: math.atan(a)*4/math.pi
     cube = lambda a: a**3
 
-    #in the last recursion, a = x and b = y
-    blocks = [['prod'], ['avg'], ['cos_pi'], ['sin_pi'], ['x'], ['y'], ['cube'], ['atan']]
-    if f in blocks:
-        a = x
-        b = y
-    else:
-    #recursively defines the inputs for the outermost function
-        a = evaluate_random_function(f[1], x, y)
-        if f[0] in ['x', 'y', 'avg', 'prod']:
-            b = evaluate_random_function(f[2], x, y)
+    #randomly selects the outermost block to go into the function, from a list of building block functions
+    blocks = [prod, avg, cos_pi, sin_pi, fx, fy, cube, atan]
+    func = random.choice(blocks) #temporary lambda function variable
 
-    if f[0] == 'prod':
-        return prod(a, b)
-    if f[0] == 'avg':
-        return avg(a, b)
-    if f[0] == 'cos_pi':
-        return cos_pi(a)
-    if f[0] == 'sin_pi':
-        return sin_pi(a)
-    if f[0] == 'x':
-        return fx(a, b)
-    if f[0] == 'y':
-        return fy(a, b)
-    if f[0] == 'cube':
-        return cube(a)
-    if f[0] == 'atan':
-        return cube(a)
+    #basic situation for when there are lots of recursions left and we don't have to worry about end cases
+    if min_depth >1:
+        in1 = build_random_function(min_depth-1, max_depth-1)
+        in2 = build_random_function(min_depth-1, max_depth-1)
+        if func in [cos_pi, sin_pi, atan, cube]:
+            return lambda a,b: func(in1(a,b))
+        else:
+            return lambda a,b: func(in1(a,b), in2(a,b))
+
+    #once max_depth gets to 1, the next element must be either x or y.
+    if max_depth <= 1:
+        list1 = [fx, fy]
+        return random.choice(list1)
+
+    #once the function gets past the threshold of min_depth, it can end if the random function is either x or y
+    if min_depth <= 1:
+        if func == fx or func == fy:
+            return func
+        else:
+            in1 = build_random_function(min_depth, max_depth-1)
+            in2 = build_random_function(min_depth, max_depth-1)
+            if func in [cos_pi, sin_pi, atan, cube]:
+                return lambda a,b: func(in1(a,b))
+            else:
+                return lambda a,b: func(in1(a,b), in2(a,b))
 
 def remap_interval(val, input_interval_start, input_interval_end, output_interval_start, output_interval_end):
     """ Given an input value in the interval [input_interval_start,
@@ -193,9 +141,9 @@ def generate_art(filename, x_size=350, y_size=350):
             x = remap_interval(i, 0, x_size, -1, 1)
             y = remap_interval(j, 0, y_size, -1, 1)
             pixels[i, j] = (
-                    color_map(evaluate_random_function(red_function, x, y)),
-                    color_map(evaluate_random_function(green_function, x, y)),
-                    color_map(evaluate_random_function(blue_function, x, y))
+                    color_map(red_function(x,y)),
+                    color_map(green_function(x,y)),
+                    color_map(blue_function(x,y))
                     )
 
     im.save(filename)
@@ -206,9 +154,7 @@ if __name__ == '__main__':
     doctest.testmod()
 
     # Create some computational art!
-    # TODO: Un-comment the generate_art function call after you
-    #       implement remap_interval and evaluate_random_function
-    generate_art("example7.png")
+    generate_art("example8.png")
 
     # Test that PIL is installed correctly
     #test_image("noise.png")
