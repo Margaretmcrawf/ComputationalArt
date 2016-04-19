@@ -1,4 +1,4 @@
-""" Function creates art based on randomly generated functions. Takes about 20 seconds to run. """
+""" Function creates art based on randomly generated functions."""
 
 import random
 import math
@@ -11,7 +11,7 @@ def build_random_function(min_depth, max_depth):
 
         min_depth: the minimum depth of the random function
         max_depth: the maximum depth of the random function
-        returns: the randomly generated function represented as a lambda function.
+        returns: the randomly generated function represented as a lambda function. 
         (see assignment writeup for details on the representation of
         these functions)
     """
@@ -32,7 +32,7 @@ def build_random_function(min_depth, max_depth):
     if min_depth >1:
         in1 = build_random_function(min_depth-1, max_depth-1)
         in2 = build_random_function(min_depth-1, max_depth-1)
-        if func in [cos_pi, sin_pi, atan, cube]:
+        if func in [cos_pi, sin_pi, atan, cube]: #functions with only one input
             return lambda a,b: func(in1(a,b))
         else:
             return lambda a,b: func(in1(a,b), in2(a,b))
